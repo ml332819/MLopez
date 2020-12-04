@@ -1,0 +1,202 @@
+<!DOCUTYPE html>
+<html>
+<head>
+<meta charset = "utf-8">
+<meta name ="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+<title> Final Project 1st Draft </title>
+<style>
+html, body, #viewDiv {
+padding: 0;
+margin: 0;
+height: 100%;
+width: 100%;
+}
+</style>
+<link rel="stylesheet" href="https://js.arcgis.com/4.17/esri/themes/light/main.css">
+<script src="https://js.arcgis.com/4.17/"></script>
+    <script>
+        require([
+            "esri/config",
+            "esri/layers/WebTileLayer",
+            "esri/Map",
+            "esri/Basemap",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/geometry/Polygon",
+            "esri/symbols/SimpleFillSymbol",
+            "esri/renderers/SimpleRenderer",
+            "dojo/domReady!"
+        ], function (esriConfig, WebTileLayer, Map, Basemap, MapView, FeatureLayer, Polygon, SimpleFillSymbol,SimpleRenderer, dom)
+               {
+            esriConfig.request.corsEnabledServers.push("a.tile.thunderforest.com", "b.tile.thunderforest.com", "c.tile.thunderforest.com");
+            
+            // This basemap includes contour lines that show relief and slope. 
+
+            var thunderForest = new WebTileLayer ({
+                urlTemplate: "https://{subDomain}.tile.thunderforest.com/landscape/{level}/{col}/{row}.png?apikey=205f758037e24f548b4c3104330879dc",
+                subDomains: ["a", "b", "c"]   
+            });
+            
+            var myBasemap = new Basemap ({
+                baseLayers: [thunderForest]
+            });
+
+            var myMap = new Map ({
+                basemap: myBasemap
+            });
+            
+            var myView = new MapView ({
+                map: myMap,
+                center: [-80.517576, 38.612536],
+                container: "viewDiv",
+                scale: 2000000
+            });
+            
+             var cntSym = new SimpleFillSymbol ({
+                color: "#ffece6",
+                style: "solid",
+                width: 2,
+                outline: {
+                    style: "dash",
+                    color: "black"
+                }
+            });
+            
+            var cntRenderer = new SimpleRenderer ({
+                symbol: cntSym
+            });
+            
+            // To add an aerial image of the state, until I can find a land use one:
+            
+            var stImage = new FeatureLayer ({
+                url: "https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/NAIP_Image_Dates/MapServer/48",
+            });
+            
+            var stImgSym = new SimpleFillSymbol ({
+                color: "light-gray",
+                style: "solid",
+                width: 0,
+                outline: {
+                    style: "solid",
+                    color: [0,0,0,0],
+                    outline: {
+                        style: "solid",
+                        color: [85, 255, 0, 255],
+                        width: 0
+                    }
+                }
+                
+            });
+            
+            var stImgRenderer = new SimpleRenderer ({
+                symbol: stImgSym
+            });
+            myMap.add(stImage);
+
+            // To add SubBasins for the watershed delineation.  My watershed is "HUC 8-" CONCAT 05050003" You have to zoom it to see it (for now). 
+            
+            var subBasins = new FeatureLayer ({
+                url: "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/4",
+            });
+            
+            var sbSym = new SimpleFillSymbol ({
+                color: "black",
+                style: "solid",
+                width: 1,
+                outline: {
+                    style: "solid",
+                    color: "blue"
+                }
+            });
+            
+            var sbRenderer = new SimpleRenderer ({
+                symbol: sbSym
+            });
+            myMap.add(subBasins);
+            
+            
+                       
+            var stSym = new SimpleFillSymbol ({
+            style: "solid",
+            width: 4,
+            outline: {
+                style: "solid",
+                color: "black"            }
+        });
+        
+        var stRenderer = new SimpleRenderer ({
+            symbol: stSym
+        });
+            
+            var states = new FeatureLayer ({
+                url: "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2010/State_County/MapServer/8",
+                renderer: stRenderer,
+                opacity: 0.5
+            });
+            
+            myMap.add(states)
+            
+              function createSymbol(color) {
+                return {
+                    type: "simple-fill",
+                    color: color,
+                    outline: {
+                        width: 0.5,
+                        color: [255, 255, 255, 0.4]
+                    },
+                    style: "solid"
+                }; 
+            }
+            
+            var renderer = {
+                type: "class-breaks",
+                field: "POP100",
+                normalizationType: "percent-of-total",
+                normalizationTotal: 1852994,
+                classBreakInfos: [{
+                    minValue: 0,
+                    maxValue: 0.50,
+                    symbol: createSymbol ("#fef0d9"),
+                    label: "0 - 0.50%"
+                }, {
+                    minValue: 0.51,
+                    maxValue: 1.79,
+                    symbol: createSymbol ("#fdcc8a"),
+                    label: "0.51 - 1.79%"
+                }, {
+                    minValue: 1.80,
+                    maxValue: 4.19,
+                    symbol: createSymbol ("#fc8d59"),
+                    label: "1.80 - 4.19%"
+                }, {
+                    minValue: 4.20,
+                    maxValue: 8.31,
+                    symbol: createSymbol ("#e34a33"),
+                    label: "4.20 - 8.31%"
+                }, {
+                    minValue: 8.32,
+                    maxValue: 27,
+                    symbol: createSymbol ("#b30000"),
+                    label: "8.32 - 30%"
+                }]
+            };
+            
+            var counties = new FeatureLayer ({
+                url: "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2010/State_County/MapServer/9",
+                definitionExpression: "STATE = 54",
+                renderer: renderer
+            })
+            
+            myMap.add(counties);
+    
+        });
+        
+             
+    </script>
+</head>
+<body>
+
+<div id = "viewDiv"> </div>
+
+</body>
+</html>
